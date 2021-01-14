@@ -1,9 +1,10 @@
 import json
 import os
-import string
+from typing import Dict, List
 from torch import zeros
 from torch.autograd import Variable
 from torch.tensor import Tensor
+from torchtext.data import get_tokenizer
 from tweet import decode_tweet, tweet
 from unidecode import unidecode
 
@@ -18,8 +19,8 @@ class dictionary():
         Initialize the dictionary.
         '''
 
-        self.idx2word: list[str] = []
-        self.word2idx: dict[str, int] = {}
+        self.idx2word: List[str] = []
+        self.word2idx: Dict[str, int] = {}
 
     def len(self) -> int:
         '''
@@ -51,7 +52,7 @@ class dictionary():
         :param string: input string
         '''
 
-        words: list[str] = string.split()
+        words: List[str] = string.split()
         tensor: Tensor = zeros(len(words)).long()
         for i in range(len(words)):
             tensor[i] = self.word2idx[words[i]]
@@ -70,9 +71,9 @@ class corpus(dict):
 
         self.json_dir: str = os.path.realpath('data/raw_json')
         self.text_dir: str = os.path.realpath('data/text')
-        self.default_src = 'data.txt'
+        self.train_set_file = 'train.txt'
+        self.train_set: List[List[str]] = []
         self.dictionary = dictionary()
-        self.train_set: list[list[str]] = []
 
     def get_text_data(self, file_name: str, all_in_one: bool = False) -> None:
         '''
@@ -82,19 +83,33 @@ class corpus(dict):
         :param all_in_one: write to a single file
         '''
 
+        def _tokenize_sentence(sentence: str) -> List[str]:
+            '''
+            Tokenize a sentence using a tokenizer.
+
+            Return a word list from the sentence.
+
+            :param sentence: input sentence
+            '''
+
+            tokenizer = get_tokenizer('spacy')
+            return tokenizer(sentence)
+
         json_path: str = os.path.join(self.json_dir, file_name + '.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as fi:
-                data: list[dict] = json.load(fi)
+                data: List[dict] = json.load(fi)
         except FileNotFoundError:
-            data: list[dict] = []
+            data: List[dict] = []
 
-        text_name: str = self.default_src if all_in_one else file_name + '.txt'
+        text_name: str = self.train_set_file if all_in_one else file_name + '.txt'
         text_path: str = os.path.join(self.text_dir, text_name)
         with open(text_path, 'a' if all_in_one else 'w') as fo:
             for entry in data:
                 t: tweet = decode_tweet(entry)
-                fo.write(unidecode(t.text) + '\n')
+                text: str = unidecode(t.text)
+                tokens: List[str] = _tokenize_sentence(text)
+                fo.write(' '.join(tokens) + '\n')
 
     def get_all_text_data(self, all_in_one: bool = False) -> None:
         '''
@@ -105,7 +120,7 @@ class corpus(dict):
 
         if all_in_one:
             # Clear the content
-            text_path: str = os.path.join(self.text_dir, self.default_src)
+            text_path: str = os.path.join(self.text_dir, self.train_set_file)
             open(text_path, 'w').close()
 
         for json_entry in os.scandir(self.json_dir):
@@ -120,17 +135,23 @@ class corpus(dict):
         :param file_name: file name of the dataset without extension
         '''
 
-        text_name: str = file_name + '.txt' if file_name else self.default_src
+        text_name: str = file_name + '.txt' if file_name else self.train_set_file
         text_path: str = os.path.join(self.text_dir, text_name)
         with open(text_path, 'r') as fi:
             for line in fi:
-                words: list[str] = line.split()
-                if words[0].startswith('...'):
-                    words.pop(0)
-                if words[-1].endswith('...'):
-                    words.pop(-1)
+                words: List[str] = line.split()
+                try:
+                    if not words:
+                        continue
+                    if words[0].startswith('...'):
+                        words.pop(0)
+                    if words[-1].endswith('...'):
+                        words.pop(-1)
+                    else:
+                        words.append('<eos>')
+                except IndexError:
+                    continue
                 else:
-                    words.append('<eos>')
-                self.train_set.append(words)
-                for word in words:
-                    self.dictionary.add_word(word)
+                    self.train_set.append(words)
+                    for word in words:
+                        self.dictionary.add_word(word)
