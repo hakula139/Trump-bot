@@ -99,8 +99,9 @@ class corpus(dict):
             for entry in data:
                 t: tweet = decode_tweet(entry)
                 text: str = unidecode(t.text)
-                tokens: List[str] = tokenizer(text)
-                buffer += ' '.join(tokens) + '\n'
+                words: List[str] = tokenizer(text)
+                buffer += ' '.join(words) + '\n'
+                self.add_sentence(words)
             fo.write(buffer)
 
     def get_all_text_data(self, all_in_one: bool = False) -> None:
@@ -120,6 +121,31 @@ class corpus(dict):
             if file_name.endswith('.json'):
                 self.get_text_data(file_name[:-len('.json')], all_in_one)
 
+    def add_sentence(self, words: List[str]) -> None:
+        '''
+        Add a new sentence to the corpus.
+
+        :param words: a preprocessed word list of the new sentence
+        '''
+
+        if not words:
+            return
+        try:
+            if words[0].startswith('...'):
+                words.pop(0)
+            else:
+                words.append('<sos>')
+            if words[-1].endswith('...'):
+                words.pop(-1)
+            else:
+                words.append('<eos>')
+        except IndexError:
+            pass
+        else:
+            self.train_set.append(words)
+            for word in words:
+                self.dictionary.add_word(word)
+
     def read_data(self, file_name: str = None) -> None:
         '''
         Read a dataset from a file, and append to the corpus.
@@ -131,19 +157,4 @@ class corpus(dict):
         text_path: str = os.path.join(self.text_dir, text_name)
         with open(text_path, 'r') as fi:
             for line in fi:
-                words: List[str] = line.split()
-                try:
-                    if not words:
-                        continue
-                    if words[0].startswith('...'):
-                        words.pop(0)
-                    if words[-1].endswith('...'):
-                        words.pop(-1)
-                    else:
-                        words.append('<eos>')
-                except IndexError:
-                    continue
-                else:
-                    self.train_set.append(words)
-                    for word in words:
-                        self.dictionary.add_word(word)
+                self.add_sentence(line.split())
