@@ -1,0 +1,11 @@
+name: pytorch_gpu
+
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+
+dependencies:
+  - pip=20.3
+  - python=3.8
+  - unidecode=1.1
