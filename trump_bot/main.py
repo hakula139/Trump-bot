@@ -1,4 +1,5 @@
 from corpus import corpus
+import time
 
 
 def main() -> None:
@@ -12,4 +13,7 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    start_time: float = time.time()
     main()
+    duration: float = time.time() - start_time
+    print(f'Done: {duration:.2f} s')

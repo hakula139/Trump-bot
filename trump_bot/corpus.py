@@ -83,18 +83,6 @@ class corpus(dict):
         :param all_in_one: write to a single file
         '''
 
-        def _tokenize_sentence(sentence: str) -> List[str]:
-            '''
-            Tokenize a sentence using a tokenizer.
-
-            Return a word list from the sentence.
-
-            :param sentence: input sentence
-            '''
-
-            tokenizer = get_tokenizer('spacy')
-            return tokenizer(sentence)
-
         json_path: str = os.path.join(self.json_dir, file_name + '.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as fi:
@@ -104,12 +92,16 @@ class corpus(dict):
 
         text_name: str = self.train_set_file if all_in_one else file_name + '.txt'
         text_path: str = os.path.join(self.text_dir, text_name)
-        with open(text_path, 'a' if all_in_one else 'w') as fo:
+        buffer_size = 1 << 20  # 1 MB
+        tokenizer = get_tokenizer('spacy')
+        with open(text_path, 'a' if all_in_one else 'w', buffering=buffer_size) as fo:
+            buffer: str = ''
             for entry in data:
                 t: tweet = decode_tweet(entry)
                 text: str = unidecode(t.text)
-                tokens: List[str] = _tokenize_sentence(text)
-                fo.write(' '.join(tokens) + '\n')
+                tokens: List[str] = tokenizer(text)
+                buffer += ' '.join(tokens) + '\n'
+            fo.write(buffer)
 
     def get_all_text_data(self, all_in_one: bool = False) -> None:
         '''
