@@ -43,16 +43,15 @@ class dictionary():
             self.idx2word.append(word)
         return self.word2idx[word]
 
-    def str2tensor(self, string: str) -> Variable:
+    def words2tensor(self, words: List[str]) -> Variable:
         '''
-        Convert a string to a list of tensors.
+        Convert a sentence to a list of tensors.
 
         Return a list of tensors.
 
-        :param string: input string
+        :param words: a preprocessed word list of the sentence
         '''
 
-        words: List[str] = string.split()
         tensor: Tensor = zeros(len(words)).long()
         for i in range(len(words)):
             tensor[i] = self.word2idx[words[i]]
