@@ -1,4 +1,5 @@
-from torch import nn, zeros
+import torch
+from torch import nn
 from torch.tensor import Tensor
 from typing import Tuple
 
@@ -15,7 +16,7 @@ class rnn(nn.Module):
     '''
 
     def __init__(self, input_size: int, hidden_size: int, output_size: int,
-                 num_layers: int = 1) -> None:
+                 num_layers: int = 1, dropout: float = 0.2) -> None:
         '''
         Initialize the RNN model.
 
@@ -32,8 +33,9 @@ class rnn(nn.Module):
         self.output_size = output_size
         self.num_layers = num_layers
 
-        self.encoder = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size, num_layers)
+        self.drop = nn.Dropout(dropout)
+        self.encoder = nn.Embedding(output_size, input_size)
+        self.gru = nn.GRU(input_size, hidden_size, num_layers, dropout=dropout)
         self.decoder = nn.Linear(hidden_size, output_size)
 
     def forward(self, inp: Tensor, hid: Tensor) -> Tuple[Tensor, Tensor]:
@@ -46,14 +48,15 @@ class rnn(nn.Module):
         :param hid: hidden tensor
         '''
 
-        inp: Tensor = self.encoder(inp.view(1, -1))
-        out, hid = self.gru(inp.view(1, 1, -1), hid)
-        out: Tensor = self.decoder(out.view(1, -1))
-        return out, hid
+        emb: Tensor = self.drop(self.encoder(inp.view(1, -1)))
+        out, hid = self.gru(emb, hid)
+        out: Tensor = self.drop(out)
+        dec: Tensor = self.decoder(out.view(1, -1))
+        return dec, hid
 
     def init_hidden(self) -> Tensor:
         '''
         Initialize the hidden state.
         '''
 
-        return zeros(self.num_layers, 1, self.hidden_size)
+        return torch.zeros(self.num_layers, 1, self.hidden_size)

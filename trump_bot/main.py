@@ -8,12 +8,14 @@ from torch.tensor import Tensor
 from typing import List, Tuple
 
 # Parameters
-hidden_size = 100
-num_layers = 4
+hidden_size = 1000
+num_layers = 10
+dropout = 0.2
 num_epochs = 2000
 chunk_size = 30
+clip = 0.25
 random_seed = 1234
-print_every = 100
+print_every = 10
 plot_every = 10
 
 # Set the random seed manually for reproducibility.
@@ -32,7 +34,7 @@ def duration_since(start_time: float) -> str:
     duration: float = time() - start_time
     minute: int = floor(duration / 60.0)
     second: float = duration - minute * 60.0
-    return (f'{minute} min ' if minute else '') + f'{second:.2f} sec'
+    return (f'{minute} m ' if minute else '') + f'{second:.1f} s'
 
 
 def init_corpus() -> None:
@@ -43,7 +45,7 @@ def init_corpus() -> None:
     global cp
     cp = corpus()
     # cp.get_all_text_data(all_in_one=True)
-    cp.read_data()
+    cp.read_data('2021')
 
 
 def init_model() -> None:
@@ -54,7 +56,7 @@ def init_model() -> None:
     dict_size = cp.dictionary.len()
 
     global m, criterion
-    m = rnn(dict_size, hidden_size, dict_size, num_layers).to(device)
+    m = rnn(dict_size, hidden_size, dict_size, num_layers, dropout).to(device)
     criterion = nn.CrossEntropyLoss()
 
 
@@ -68,11 +70,14 @@ def get_train_pair() -> Tuple[Tensor, Tensor]:
     max_i: int = len(cp.train_set) - chunk_size
     # Take a random integer from [0, max_i)
     i: int = torch.randint(0, max_i, (1,))[0]
+
     inp_words: List[str] = cp.train_set[i:i+chunk_size]
+    inp: Tensor = cp.words_to_tensor(inp_words).to(device)
+
     tar_words: List[str] = cp.train_set[i+1:i+1+chunk_size]
-    inp: Tensor = cp.dictionary.words2tensor(inp_words).to(device)
-    tar: Tensor = cp.dictionary.words2tensor(tar_words).to(device)
-    return (inp, tar)
+    tar: Tensor = cp.words_to_tensor(tar_words).to(device)
+
+    return inp, tar
 
 
 def train(inp: Tensor, tar: Tensor) -> float:
@@ -86,16 +91,17 @@ def train(inp: Tensor, tar: Tensor) -> float:
     '''
 
     m.train()
-    hid: Tensor = m.init_hidden().to(device)
     m.zero_grad()
-    total_loss: Tensor = torch.tensor([0.0], requires_grad=True)
+    hid: Tensor = m.init_hidden().to(device)
 
-    for i in range(chunk_size):
+    loss: Tensor = 0
+    for i in range(inp.size(0)):
         out, hid = m.forward(inp[i], hid)
-        total_loss += criterion(out, tar[i])
+        loss += criterion(out, tar[i].view(-1))
+    loss.backward()
 
-    total_loss.backward()
-    return total_loss[0] / chunk_size
+    nn.utils.clip_grad_norm_(m.parameters(), clip)
+    return loss.item() / chunk_size
 
 
 def evaluate(prime_words: List[str] = ['<sos>'], predict_len: int = 30,
@@ -117,7 +123,7 @@ def evaluate(prime_words: List[str] = ['<sos>'], predict_len: int = 30,
 
     m.eval()
     hid: Tensor = m.init_hidden()
-    prime_inp: Tensor = cp.dictionary.words2tensor(prime_words)
+    prime_inp: Tensor = cp.words_to_tensor(prime_words)
     predicted_words: List[str] = prime_words
 
     for p in range(len(prime_words) - 1):
@@ -134,7 +140,7 @@ def evaluate(prime_words: List[str] = ['<sos>'], predict_len: int = 30,
         # Add predicted word to words and use as next input
         predicted_word: str = cp.dictionary.idx2word[top_i]
         predicted_words.append(predicted_word)
-        inp = cp.dictionary.words2tensor(predicted_word)
+        inp = cp.words_to_tensor(predicted_word)
 
     return predicted_words
 
@@ -162,14 +168,16 @@ def main() -> None:
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
             print()
-            print('{:4} ({:5}%%) [{}] - Loss: {}'.format(
-                epoch, progress, duration_since(start_time), loss)
-            )
+            print('{}: ({} {}%) {}'.format(
+                duration_since(start_time), epoch, progress, loss,
+            ))
             print(evaluate('<sos>', 100))
 
         if epoch % plot_every == 0:
             all_losses.append(loss_avg / plot_every)
             loss_avg = 0.0
+
+    print(duration_since(start_time) + ': Training model done.')
 
 
 if __name__ == '__main__':

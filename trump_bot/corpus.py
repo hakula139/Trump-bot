@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Dict, List
-from torch import zeros
+import torch
 from torch.tensor import Tensor
 from torchtext.data import get_tokenizer
 from tweet import decode_tweet, tweet
@@ -41,20 +41,6 @@ class dictionary():
             self.word2idx[word] = self.len()
             self.idx2word.append(word)
         return self.word2idx[word]
-
-    def words2tensor(self, words: List[str]) -> Tensor:
-        '''
-        Convert a sentence to a list of tensors.
-
-        Return a list of tensors.
-
-        :param words: a preprocessed word list of the sentence
-        '''
-
-        tensor: Tensor = zeros(len(words)).long()
-        for i in range(len(words)):
-            tensor[i] = self.word2idx[words[i]]
-        return tensor
 
 
 class corpus(dict):
@@ -156,3 +142,17 @@ class corpus(dict):
         with open(text_path, 'r') as fi:
             for line in fi:
                 self.add_sentence(line.split())
+
+    def words_to_tensor(self, words: List[str]) -> Tensor:
+        '''
+        Convert a sentence to a tensor.
+
+        Return a tensor.
+
+        :param words: a preprocessed word list of the sentence
+        '''
+
+        tensor: Tensor = torch.zeros(len(words)).long()
+        for i in range(len(words)):
+            tensor[i] = self.dictionary.word2idx[words[i]]
+        return tensor
