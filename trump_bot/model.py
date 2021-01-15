@@ -1,10 +1,9 @@
 from torch import nn, zeros
-from torch.autograd import Variable
 from torch.tensor import Tensor
 from typing import Tuple
 
 
-class RNN(nn.Module):
+class rnn(nn.Module):
     '''
     Build an RNN model.
 
@@ -22,7 +21,7 @@ class RNN(nn.Module):
 
         :param input_size: the number of expected features in the input
         :param hidden_size: the number of features in the hidden state
-        :param output_size: the number of features in the output
+        :param output_size: the number of expected features in the output
         :param num_layers: the number of recurrent layers
         '''
 
@@ -37,24 +36,24 @@ class RNN(nn.Module):
         self.gru = nn.GRU(hidden_size, hidden_size, num_layers)
         self.decoder = nn.Linear(hidden_size, output_size)
 
-    def forward(self, input: Tensor, hidden: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, inp: Tensor, hid: Tensor) -> Tuple[Tensor, Tensor]:
         '''
         The forward function which defines the network structure.
 
         Return the result of output tensor and hidden tensor.
 
-        :param input: input tensor
-        :param hidden: hidden tensor
+        :param inp: input tensor
+        :param hid: hidden tensor
         '''
 
-        input: Tensor = self.encoder(input.view(1, -1))
-        output, hidden = self.gru(input.view(1, 1, -1), hidden)
-        output: Tensor = self.decoder(output.view(1, -1))
-        return output, hidden
+        inp: Tensor = self.encoder(inp.view(1, -1))
+        out, hid = self.gru(inp.view(1, 1, -1), hid)
+        out: Tensor = self.decoder(out.view(1, -1))
+        return out, hid
 
-    def init_hidden(self) -> Variable:
+    def init_hidden(self) -> Tensor:
         '''
         Initialize the hidden state.
         '''
 
-        return Variable(zeros(self.num_layers, 1, self.hidden_size))
+        return zeros(self.num_layers, 1, self.hidden_size)

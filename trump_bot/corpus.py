@@ -2,7 +2,6 @@ import json
 import os
 from typing import Dict, List
 from torch import zeros
-from torch.autograd import Variable
 from torch.tensor import Tensor
 from torchtext.data import get_tokenizer
 from tweet import decode_tweet, tweet
@@ -43,7 +42,7 @@ class dictionary():
             self.idx2word.append(word)
         return self.word2idx[word]
 
-    def words2tensor(self, words: List[str]) -> Variable:
+    def words2tensor(self, words: List[str]) -> Tensor:
         '''
         Convert a sentence to a list of tensors.
 
@@ -55,7 +54,7 @@ class dictionary():
         tensor: Tensor = zeros(len(words)).long()
         for i in range(len(words)):
             tensor[i] = self.word2idx[words[i]]
-        return Variable(tensor)
+        return tensor
 
 
 class corpus(dict):
@@ -71,7 +70,7 @@ class corpus(dict):
         self.json_dir: str = os.path.realpath('data/raw_json')
         self.text_dir: str = os.path.realpath('data/text')
         self.train_set_file = 'train.txt'
-        self.train_set: List[List[str]] = []
+        self.train_set: List[str] = []
         self.dictionary = dictionary()
 
     def get_text_data(self, file_name: str, all_in_one: bool = False) -> None:
@@ -95,12 +94,12 @@ class corpus(dict):
         tokenizer = get_tokenizer('spacy')
         with open(text_path, 'a' if all_in_one else 'w', buffering=buffer_size) as fo:
             buffer: str = ''
-            for entry in data:
+            # Reverse the list to sort by time in ascending order
+            for entry in reversed(data):
                 t: tweet = decode_tweet(entry)
                 text: str = unidecode(t.text)
                 words: List[str] = tokenizer(text)
                 buffer += ' '.join(words) + '\n'
-                self.add_sentence(words)
             fo.write(buffer)
 
     def get_all_text_data(self, all_in_one: bool = False) -> None:
@@ -141,7 +140,7 @@ class corpus(dict):
         except IndexError:
             pass
         else:
-            self.train_set.append(words)
+            self.train_set += words
             for word in words:
                 self.dictionary.add_word(word)
 
