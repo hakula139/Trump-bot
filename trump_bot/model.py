@@ -59,4 +59,5 @@ class rnn(nn.Module):
         Initialize the hidden state.
         '''
 
-        return torch.zeros(self.num_layers, 1, self.hidden_size)
+        weight = next(self.parameters())
+        return weight.new_zeros(self.num_layers, 1, self.hidden_size)

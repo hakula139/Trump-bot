@@ -15,7 +15,7 @@ num_epochs = 2000
 chunk_size = 30
 clip = 0.25
 random_seed = 1234
-print_every = 10
+print_every = 2
 plot_every = 10
 
 # Set the random seed manually for reproducibility.
@@ -60,6 +60,21 @@ def init_model() -> None:
     criterion = nn.CrossEntropyLoss()
 
 
+def words_to_tensor(words: List[str]) -> Tensor:
+    '''
+    Convert a sentence to a tensor.
+
+    Return a tensor.
+
+    :param words: a preprocessed word list of the sentence
+    '''
+
+    tensor: Tensor = torch.zeros(len(words)).long().to(device)
+    for i in range(len(words)):
+        tensor[i] = cp.dictionary.word2idx[words[i]]
+    return tensor
+
+
 def get_train_pair() -> Tuple[Tensor, Tensor]:
     '''
     Return a random pair of input and target based on the source tensor.
@@ -72,10 +87,10 @@ def get_train_pair() -> Tuple[Tensor, Tensor]:
     i: int = torch.randint(0, max_i, (1,))[0]
 
     inp_words: List[str] = cp.train_set[i:i+chunk_size]
-    inp: Tensor = cp.words_to_tensor(inp_words).to(device)
+    inp: Tensor = words_to_tensor(inp_words)
 
     tar_words: List[str] = cp.train_set[i+1:i+1+chunk_size]
-    tar: Tensor = cp.words_to_tensor(tar_words).to(device)
+    tar: Tensor = words_to_tensor(tar_words)
 
     return inp, tar
 
@@ -92,11 +107,11 @@ def train(inp: Tensor, tar: Tensor) -> float:
 
     m.train()
     m.zero_grad()
-    hid: Tensor = m.init_hidden().to(device)
+    hid: Tensor = m.init_hidden()
 
     loss: Tensor = 0
     for i in range(inp.size(0)):
-        out, hid = m.forward(inp[i], hid)
+        out, hid = m(inp[i], hid)
         loss += criterion(out, tar[i].view(-1))
     loss.backward()
 
@@ -104,7 +119,7 @@ def train(inp: Tensor, tar: Tensor) -> float:
     return loss.item() / chunk_size
 
 
-def evaluate(prime_words: List[str] = ['<sos>'], predict_len: int = 30,
+def evaluate(prime_words: List[str] = None, predict_len: int = 30,
              temperature: float = 0.8) -> List[str]:
     '''
     Evaluate the network.
@@ -123,15 +138,18 @@ def evaluate(prime_words: List[str] = ['<sos>'], predict_len: int = 30,
 
     m.eval()
     hid: Tensor = m.init_hidden()
-    prime_inp: Tensor = cp.words_to_tensor(prime_words)
+
+    if not prime_words:
+        prime_words = ['<sos>']
+    prime_inp: Tensor = words_to_tensor(prime_words)
     predicted_words: List[str] = prime_words
 
     for p in range(len(prime_words) - 1):
-        _, hid = m.forward(prime_inp[p], hid)
+        _, hid = m(prime_inp[p], hid)
     inp: Tensor = prime_inp[-1]
 
     for p in range(predict_len):
-        out, hid = m.forward(inp, hid)
+        out, hid = m(inp, hid)
 
         # Sample from the network as a multinomial distribution
         out_dist: Tensor = out.view(-1).div(temperature).exp()
@@ -140,7 +158,7 @@ def evaluate(prime_words: List[str] = ['<sos>'], predict_len: int = 30,
         # Add predicted word to words and use as next input
         predicted_word: str = cp.dictionary.idx2word[top_i]
         predicted_words.append(predicted_word)
-        inp = cp.words_to_tensor(predicted_word)
+        inp.fill_(top_i)
 
     return predicted_words
 
@@ -171,7 +189,7 @@ def main() -> None:
             print('{}: ({} {}%) {}'.format(
                 duration_since(start_time), epoch, progress, loss,
             ))
-            print(evaluate('<sos>', 100))
+            print(evaluate(None, 100))
 
         if epoch % plot_every == 0:
             all_losses.append(loss_avg / plot_every)

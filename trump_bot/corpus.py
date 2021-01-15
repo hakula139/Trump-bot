@@ -142,17 +142,3 @@ class corpus(dict):
         with open(text_path, 'r') as fi:
             for line in fi:
                 self.add_sentence(line.split())
-
-    def words_to_tensor(self, words: List[str]) -> Tensor:
-        '''
-        Convert a sentence to a tensor.
-
-        Return a tensor.
-
-        :param words: a preprocessed word list of the sentence
-        '''
-
-        tensor: Tensor = torch.zeros(len(words)).long()
-        for i in range(len(words)):
-            tensor[i] = self.dictionary.word2idx[words[i]]
-        return tensor
