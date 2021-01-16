@@ -1,8 +1,6 @@
 import json
 import os
 from typing import Dict, List
-import torch
-from torch.tensor import Tensor
 from torchtext.data import get_tokenizer
 from tweet import decode_tweet, tweet
 from unidecode import unidecode

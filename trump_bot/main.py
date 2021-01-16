@@ -3,7 +3,7 @@ from corpus import corpus
 from model import rnn
 from time import time
 import torch
-from torch import nn
+from torch import nn, optim
 from torch.tensor import Tensor
 from typing import List, Tuple
 from utils import duration_since
@@ -30,7 +30,7 @@ def init_model() -> None:
     global m, criterion, optimizer
     m = rnn(dict_size, hidden_size, dict_size, num_layers, dropout).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(m.parameters(), lr=lr)
+    optimizer = optim.Adam(m.parameters(), lr=lr)
 
 
 def words_to_tensor(words: List[str]) -> Tensor:
@@ -78,7 +78,6 @@ def train(inp: Tensor, tar: Tensor) -> float:
     :param tar: target tensor
     '''
 
-    m.train()
     m.zero_grad()
     hid: Tensor = m.init_hidden()
 
@@ -110,7 +109,6 @@ def evaluate(prime_words: List[str] = None, predict_len: int = 30,
     :param temperature: randomness of predictions; higher value results in more diversity
     '''
 
-    m.eval()
     hid: Tensor = m.init_hidden()
 
     if not prime_words:
@@ -153,23 +151,28 @@ def main() -> None:
     print(duration_since(start_time) + ': Training model initialized.')
 
     all_losses: List[float] = []
-    loss_avg: float = 0.0
+    total_loss: float = 0.0
+    m.train()
 
     for epoch in range(1, num_epochs + 1):
         loss: float = train(*get_train_pair())
-        loss_avg += loss
+        total_loss += loss
 
         if epoch % print_every == 0:
+            m.eval()
             progress: float = epoch / num_epochs * 100
-            print()
-            print('{}: ({} {:.1f}%) {:.3f}'.format(
+            print('\n{}: ({} {:.1f}%) {:.3f}'.format(
                 duration_since(start_time), epoch, progress, loss,
             ))
-            print(evaluate(None, 100))
+            predicted_words: List[str] = evaluate(
+                None, predict_len=predict_len, temperature=temperature,
+            )
+            print(' '.join(predicted_words))
+            m.train()
 
         if epoch % plot_every == 0:
-            all_losses.append(loss_avg / plot_every)
-            loss_avg = 0.0
+            all_losses.append(total_loss / plot_every)
+            total_loss = 0.0
 
     print(duration_since(start_time) + ': Training model done.')
 
@@ -177,11 +180,13 @@ def main() -> None:
 if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
-    num_layers = 5
+    num_layers = 10
     dropout = 0.2
     lr = 0.005
     num_epochs = 2000
     chunk_size = 20
+    predict_len = 50
+    temperature = 0.7
     clip = 0.25
     random_seed = 1234
     print_every = 100

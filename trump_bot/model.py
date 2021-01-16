@@ -54,10 +54,12 @@ class rnn(nn.Module):
         dec: Tensor = self.decoder(out.view(1, -1))
         return dec, hid
 
-    def init_hidden(self) -> Tensor:
+    def init_hidden(self, batch_size: int = 1) -> Tensor:
         '''
         Initialize the hidden state.
+
+        :param batch_size: batch size
         '''
 
         weight = next(self.parameters())
-        return weight.new_zeros(self.num_layers, 1, self.hidden_size)
+        return weight.new_zeros(self.num_layers, batch_size, self.hidden_size)
