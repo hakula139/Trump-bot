@@ -1,5 +1,10 @@
+import matplotlib.pyplot as plt
 from math import floor
+import os
 from time import time
+from typing import List
+
+plot_location: str = os.path.realpath('assets/loss.png')
 
 
 def duration_since(start_time: float) -> str:
@@ -23,3 +28,15 @@ def duration_since(start_time: float) -> str:
         pretty_duration += f'{minute}m '
     pretty_duration += f'{second:.1f}s'
     return pretty_duration
+
+
+def plot(all_losses: List[float]) -> None:
+    '''
+    Plot the historical loss from `all_losses`, which shows the network learning rate.
+
+    :param all_losses: the historical loss
+    '''
+
+    plt.figure()
+    plt.plot(all_losses)
+    plt.savefig(plot_location)
