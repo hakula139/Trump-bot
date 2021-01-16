@@ -162,6 +162,9 @@ def evaluate(prime_words: List[str] = None, predict_len: int = 30,
             # Add predicted word to words and use as next input
             predicted_word: str = cp.dictionary.idx2word[top_i]
             predicted_words.append(predicted_word)
+            if (predicted_word == cp.dictionary.eos):
+                break
+
             inp.fill_(top_i)
 
     return predicted_words
