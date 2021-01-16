@@ -1,40 +1,12 @@
 from corpus import corpus
-from math import floor
+
 from model import rnn
 from time import time
 import torch
 from torch import nn
 from torch.tensor import Tensor
 from typing import List, Tuple
-
-# Parameters
-hidden_size = 1000
-num_layers = 10
-dropout = 0.2
-num_epochs = 2000
-chunk_size = 30
-clip = 0.25
-random_seed = 1234
-print_every = 2
-plot_every = 10
-
-# Set the random seed manually for reproducibility.
-torch.manual_seed(random_seed)
-# Enable CUDA if available
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-def duration_since(start_time: float) -> str:
-    '''
-    Return the duration since start time in a human-readable format.
-
-    :param start_time: start time
-    '''
-
-    duration: float = time() - start_time
-    minute: int = floor(duration / 60.0)
-    second: float = duration - minute * 60.0
-    return (f'{minute} m ' if minute else '') + f'{second:.1f} s'
+from utils import duration_since
 
 
 def init_corpus() -> None:
@@ -55,9 +27,10 @@ def init_model() -> None:
 
     dict_size = cp.dictionary.len()
 
-    global m, criterion
+    global m, criterion, optimizer
     m = rnn(dict_size, hidden_size, dict_size, num_layers, dropout).to(device)
     criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(m.parameters(), lr=lr)
 
 
 def words_to_tensor(words: List[str]) -> Tensor:
@@ -116,6 +89,7 @@ def train(inp: Tensor, tar: Tensor) -> float:
     loss.backward()
 
     nn.utils.clip_grad_norm_(m.parameters(), clip)
+    optimizer.step()
     return loss.item() / chunk_size
 
 
@@ -141,24 +115,26 @@ def evaluate(prime_words: List[str] = None, predict_len: int = 30,
 
     if not prime_words:
         prime_words = ['<sos>']
-    prime_inp: Tensor = words_to_tensor(prime_words)
-    predicted_words: List[str] = prime_words
 
-    for p in range(len(prime_words) - 1):
-        _, hid = m(prime_inp[p], hid)
-    inp: Tensor = prime_inp[-1]
+    with torch.no_grad():
+        prime_inp: Tensor = words_to_tensor(prime_words)
+        predicted_words: List[str] = prime_words
 
-    for p in range(predict_len):
-        out, hid = m(inp, hid)
+        for p in range(len(prime_words) - 1):
+            _, hid = m(prime_inp[p], hid)
+        inp: Tensor = prime_inp[-1]
 
-        # Sample from the network as a multinomial distribution
-        out_dist: Tensor = out.view(-1).div(temperature).exp()
-        top_i: int = torch.multinomial(out_dist, 1)[0]
+        for p in range(predict_len):
+            out, hid = m(inp, hid)
 
-        # Add predicted word to words and use as next input
-        predicted_word: str = cp.dictionary.idx2word[top_i]
-        predicted_words.append(predicted_word)
-        inp.fill_(top_i)
+            # Sample from the network as a multinomial distribution
+            out_dist: Tensor = out.view(-1).div(temperature).exp()
+            top_i: int = torch.multinomial(out_dist, 1)[0]
+
+            # Add predicted word to words and use as next input
+            predicted_word: str = cp.dictionary.idx2word[top_i]
+            predicted_words.append(predicted_word)
+            inp.fill_(top_i)
 
     return predicted_words
 
@@ -186,7 +162,7 @@ def main() -> None:
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
             print()
-            print('{}: ({} {}%) {}'.format(
+            print('{}: ({} {:.1f}%) {:.3f}'.format(
                 duration_since(start_time), epoch, progress, loss,
             ))
             print(evaluate(None, 100))
@@ -199,4 +175,21 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    # Parameters
+    hidden_size = 1000
+    num_layers = 5
+    dropout = 0.2
+    lr = 0.005
+    num_epochs = 2000
+    chunk_size = 20
+    clip = 0.25
+    random_seed = 1234
+    print_every = 100
+    plot_every = 10
+
+    # Set the random seed manually for reproducibility.
+    torch.manual_seed(random_seed)
+    # Enable CUDA if available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     main()
