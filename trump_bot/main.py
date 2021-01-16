@@ -1,11 +1,13 @@
+from torch.serialization import load
 from corpus import corpus
 from model import rnn
+import os
 from time import time
 import torch
 from torch import nn, optim
 from torch.tensor import Tensor
 from typing import List, Tuple
-from utils import duration_since, plot
+from utils import duration_since
 
 
 def init_corpus() -> None:
@@ -15,8 +17,8 @@ def init_corpus() -> None:
 
     global cp
     cp = corpus()
-    cp.get_all_text_data(all_in_one=True)
-    cp.read_data()
+    # cp.get_all_text_data(all_in_one=False)
+    cp.read_data('2020')
 
 
 def init_model() -> None:
@@ -28,8 +30,9 @@ def init_model() -> None:
 
     global m, criterion, optimizer
     m = rnn(dict_size, hidden_size, dict_size, num_layers, dropout).to(device)
+    load_model()
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(m.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(m.parameters(), learning_rate)
 
 
 def words_to_tensor(words: List[str]) -> Tensor:
@@ -102,10 +105,16 @@ def train_model() -> List[float]:
     m.train()
     all_losses: List[float] = []
     total_loss: float = 0.0
+    min_loss: float = 2.0
 
     for epoch in range(1, num_epochs + 1):
         loss: float = train(*get_train_pair())
         total_loss += loss
+
+        if loss < min_loss:
+            save_model()
+            print(duration_since(start_time) + f': Model saved, {loss:.3f}')
+            min_loss = loss
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
@@ -176,12 +185,28 @@ def evaluate_model() -> None:
     '''
 
     m.eval()
-    i: int = torch.randint(0, cp.dictionary.len(), (1,))[0]
-    prime_word: str = cp.dictionary.idx2word[i]
     predicted_words: List[str] = evaluate(
-        [cp.dictionary.sos, prime_word], predict_len, temperature,
+        [cp.dictionary.sos], predict_len, temperature,
     )
-    print(' '.join(predicted_words))
+    print('\n', ' '.join(predicted_words))
+
+
+def save_model() -> None:
+    '''
+    Save the current model.
+    '''
+
+    with open(save_path, 'wb') as f:
+        torch.save(m.state_dict(), f)
+
+
+def load_model() -> None:
+    '''
+    Load the best model from file.
+    '''
+
+    with open(save_path, 'rb') as f:
+        m.load_state_dict(torch.load(f))
 
 
 def main() -> None:
@@ -195,27 +220,34 @@ def main() -> None:
     init_model()
     print(duration_since(start_time) + ': Training model initialized.')
 
-    all_losses = train_model()
-    print(duration_since(start_time) + ': Training model done.')
+    # all_losses = train_model()
+    # print(duration_since(start_time) + ': Training model done.')
 
-    plot(all_losses)
-    print(duration_since(start_time) + ': Plotting done.')
+    # plot(all_losses)
+    # print(duration_since(start_time) + ': Plotting done.')
+
+    load_model()
+    for _ in range(batch_size):
+        evaluate_model()
+    print(duration_since(start_time) + ': Evaluating model done.')
 
 
 if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
     num_layers = 2
-    dropout = 0.5
-    learning_rate = 0.001
-    num_epochs = 2000
+    dropout = 0.3
+    learning_rate = 0.0005
+    num_epochs = 1000
+    batch_size = 30
     chunk_size = 20
-    predict_len = 50
+    predict_len = 100
     temperature = 0.8
     clip = 0.25
     random_seed = 1234
     print_every = 100
     plot_every = 10
+    save_path = os.path.realpath('model/model.pt')
 
     # Set the random seed manually for reproducibility.
     torch.manual_seed(random_seed)
@@ -223,4 +255,8 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     start_time = time()
-    main()
+
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('\nAborted.')
