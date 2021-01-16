@@ -19,6 +19,11 @@ class dictionary():
         self.idx2word: List[str] = []
         self.word2idx: Dict[str, int] = {}
 
+        self.sos = '<sos>'  # start of sentence
+        self.eos = '<eos>'  # end of sentence
+        self.add_word(self.sos)
+        self.add_word(self.eos)
+
     def len(self) -> int:
         '''
         Return the current size of the dictionary.
@@ -116,11 +121,11 @@ class corpus(dict):
             if words[0].startswith('...'):
                 words.pop(0)
             else:
-                words.append('<sos>')
+                words.insert(0, self.dictionary.sos)
             if words[-1].endswith('...'):
                 words.pop(-1)
             else:
-                words.append('<eos>')
+                words.append(self.dictionary.eos)
         except IndexError:
             pass
         else:

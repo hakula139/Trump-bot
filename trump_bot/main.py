@@ -109,7 +109,7 @@ def train_model() -> List[float]:
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
-            print('\n{}: ({} {:.1f}%) {:.3f}'.format(
+            print('{}: ({} {:.1f}%) {:.3f}'.format(
                 duration_since(start_time), epoch, progress, loss,
             ))
 
@@ -140,7 +140,7 @@ def evaluate(prime_words: List[str] = None, predict_len: int = 30,
     hid: Tensor = m.init_hidden()
 
     if not prime_words:
-        prime_words = ['<sos>']
+        prime_words = [cp.dictionary.sos]
 
     with torch.no_grad():
         prime_inp: Tensor = words_to_tensor(prime_words)
@@ -171,8 +171,10 @@ def evaluate_model() -> None:
     '''
 
     m.eval()
+    i: int = torch.randint(0, cp.dictionary.len, (1,))[0]
+    prime_word: str = cp.dictionary.idx2word[i]
     predicted_words: List[str] = evaluate(
-        None, predict_len=predict_len, temperature=temperature,
+        [cp.dictionary.sos, prime_word], predict_len, temperature,
     )
     print(' '.join(predicted_words))
 
@@ -201,7 +203,7 @@ def main() -> None:
 if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
-    num_layers = 5
+    num_layers = 2
     dropout = 0.2
     learning_rate = 0.001
     num_epochs = 2000
