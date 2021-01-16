@@ -67,8 +67,12 @@ class dictionary():
                 removed_word: str = self.idx2word[i]
                 self.word2idx.pop(removed_word)
 
-                # Swap the removed word with the last word in dictionary
                 last_word: str = self.idx2word.pop()
+                if i >= len(self.idx2word):
+                    self.idx2freq.pop()
+                    break
+
+                # Swap the removed word with the last word in dictionary
                 self.idx2word[i] = last_word
                 self.idx2freq[i] = self.idx2freq.pop()
                 self.word2idx[last_word] = i
@@ -91,13 +95,13 @@ class corpus(dict):
         self.data_file = 'data.txt'
 
         self.train_set: List[str] = []
-        self.train_proportion = 0.6
+        self.train_proportion = 0.8
 
         self.dev_set: List[str] = []
-        self.dev_proportion = 0.2
+        self.dev_proportion = 0.1
 
         self.test_set: List[str] = []
-        self.test_proportion = 0.2
+        self.test_proportion = 0.1
 
         self.dictionary = dictionary()
 

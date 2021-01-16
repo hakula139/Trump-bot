@@ -17,7 +17,11 @@ def init_corpus() -> None:
     global cp
     cp = corpus()
     # cp.get_all_text_data(all_in_one=False)
+    # cp.read_data('2018')
+    # cp.read_data('2019')
     cp.read_data('2020')
+    cp.read_data('2021')
+    print(f'Dictionary size: {cp.dictionary.len()}')
 
 
 def init_model() -> None:
@@ -260,14 +264,14 @@ def main() -> None:
 if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
-    num_layers = 2
-    dropout = 0.3
-    learning_rate = 0.0005
-    num_epochs = 2000
+    num_layers = 3
+    dropout = 0.2
+    learning_rate = 0.001
+    num_epochs = 4000
     batch_size = 30
-    chunk_size = 20
-    predict_len = 100
-    temperature = 0.8
+    chunk_size = 30
+    predict_len = 140
+    temperature = 0.7
     clip = 0.25
     random_seed = 1234
     print_every = 100
