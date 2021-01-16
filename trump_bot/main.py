@@ -112,6 +112,8 @@ def train_model() -> List[float]:
             print('{}: ({} {:.1f}%) {:.3f}'.format(
                 duration_since(start_time), epoch, progress, loss,
             ))
+            evaluate_model()
+            m.train()
 
         if epoch % plot_every == 0:
             all_losses.append(total_loss / plot_every)
@@ -171,7 +173,7 @@ def evaluate_model() -> None:
     '''
 
     m.eval()
-    i: int = torch.randint(0, cp.dictionary.len, (1,))[0]
+    i: int = torch.randint(0, cp.dictionary.len(), (1,))[0]
     prime_word: str = cp.dictionary.idx2word[i]
     predicted_words: List[str] = evaluate(
         [cp.dictionary.sos, prime_word], predict_len, temperature,
