@@ -1,4 +1,3 @@
-from torch.serialization import load
 from corpus import corpus
 from model import rnn
 import os
@@ -7,7 +6,7 @@ import torch
 from torch import nn, optim
 from torch.tensor import Tensor
 from typing import List, Tuple
-from utils import duration_since
+from utils import duration_since, plot
 
 
 def init_corpus() -> None:
@@ -46,25 +45,45 @@ def words_to_tensor(words: List[str]) -> Tensor:
 
     tensor: Tensor = torch.zeros(len(words), device=device).long()
     for i in range(len(words)):
-        tensor[i] = cp.dictionary.word2idx[words[i]]
+        ran_i: int = torch.randint(
+            cp.dictionary.start_pos, cp.dictionary.len(), (1,),
+        )[0]
+        tensor[i] = cp.dictionary.word2idx.get(words[i], ran_i)
     return tensor
 
 
-def get_train_pair() -> Tuple[Tensor, Tensor]:
+def get_random_word() -> str:
     '''
-    Return a random pair of input and target based on the source tensor.
-
-    :param src: source tensor
+    Return a random word from the dictionary.
     '''
 
-    max_i: int = len(cp.train_set) - chunk_size
-    # Take a random integer from [0, max_i)
+    i: int = torch.randint(
+        cp.dictionary.start_pos, cp.dictionary.len(), (1,),
+    )[0]
+    return cp.dictionary.idx2word[i]
+
+
+def get_random_pair(dataset: str = 'train') -> Tuple[Tensor, Tensor]:
+    '''
+    Return a random pair of input and target from the dataset.
+
+    :param dataset: which dataset, can be `'train'`, `'dev'` or `'test'`
+    '''
+
+    if dataset == 'dev':
+        src = cp.dev_set
+    elif dataset == 'test':
+        src = cp.test_set
+    else:
+        src = cp.train_set
+
+    max_i: int = len(src) - chunk_size
     i: int = torch.randint(0, max_i, (1,))[0]
 
-    inp_words: List[str] = cp.train_set[i:i+chunk_size]
+    inp_words: List[str] = src[i:i+chunk_size]
     inp: Tensor = words_to_tensor(inp_words)
 
-    tar_words: List[str] = cp.train_set[i+1:i+1+chunk_size]
+    tar_words: List[str] = src[i+1:i+1+chunk_size]
     tar: Tensor = words_to_tensor(tar_words)
 
     return inp, tar
@@ -108,7 +127,7 @@ def train_model() -> List[float]:
     min_loss: float = 2.0
 
     for epoch in range(1, num_epochs + 1):
-        loss: float = train(*get_train_pair())
+        loss: float = train(*get_random_pair('train'))
         total_loss += loss
 
         if loss < min_loss:
@@ -185,10 +204,11 @@ def evaluate_model() -> None:
     '''
 
     m.eval()
+    prime_word: str = get_random_word()
     predicted_words: List[str] = evaluate(
-        [cp.dictionary.sos], predict_len, temperature,
+        [cp.dictionary.sos, prime_word], predict_len, temperature,
     )
-    print('\n', ' '.join(predicted_words))
+    print(' '.join(predicted_words))
 
 
 def save_model() -> None:
@@ -205,8 +225,11 @@ def load_model() -> None:
     Load the best model from file.
     '''
 
-    with open(save_path, 'rb') as f:
-        m.load_state_dict(torch.load(f))
+    try:
+        with open(save_path, 'rb') as f:
+            m.load_state_dict(torch.load(f))
+    except FileNotFoundError:
+        pass
 
 
 def main() -> None:
@@ -220,14 +243,16 @@ def main() -> None:
     init_model()
     print(duration_since(start_time) + ': Training model initialized.')
 
-    # all_losses = train_model()
-    # print(duration_since(start_time) + ': Training model done.')
+    all_losses = train_model()
+    print(duration_since(start_time) + ': Training model done.')
 
-    # plot(all_losses)
-    # print(duration_since(start_time) + ': Plotting done.')
+    plot(all_losses)
+    print(duration_since(start_time) + ': Plotting done.')
 
     load_model()
-    for _ in range(batch_size):
+    for i in range(1, batch_size + 1):
+        progress: float = i / batch_size * 100
+        print(f'({i} {progress:.1f}%)')
         evaluate_model()
     print(duration_since(start_time) + ': Evaluating model done.')
 
@@ -238,7 +263,7 @@ if __name__ == '__main__':
     num_layers = 2
     dropout = 0.3
     learning_rate = 0.0005
-    num_epochs = 1000
+    num_epochs = 2000
     batch_size = 30
     chunk_size = 20
     predict_len = 100

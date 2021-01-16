@@ -1,4 +1,5 @@
 import json
+from math import floor
 import os
 from typing import Dict, List
 from torchtext.data import get_tokenizer
@@ -17,12 +18,18 @@ class dictionary():
         '''
 
         self.idx2word: List[str] = []
+        self.idx2freq: List[int] = []
         self.word2idx: Dict[str, int] = {}
+        self.freq_threshold = 1
+        self.start_pos = 3
 
-        self.sos = '<sos>'  # start of sentence
+        self.unk = '<unk>'  # unknown word
         self.eos = '<eos>'  # end of sentence
-        self.add_word(self.sos)
+        self.sos = '<sos>'  # start of sentence
+
+        self.add_word(self.unk)
         self.add_word(self.eos)
+        self.add_word(self.sos)
 
     def len(self) -> int:
         '''
@@ -41,9 +48,32 @@ class dictionary():
         '''
 
         if word not in self.idx2word:
-            self.word2idx[word] = self.len()
+            idx = self.word2idx[word] = self.len()
             self.idx2word.append(word)
-        return self.word2idx[word]
+            self.idx2freq.append(1)
+        else:
+            idx = self.word2idx[word]
+            self.idx2freq[idx] += 1
+        return idx
+
+    def clear_words(self) -> None:
+        '''
+        Remove infrequent words that appears at most `freq_threshold`.
+        '''
+
+        i: int = self.start_pos
+        while i < len(self.idx2word):
+            if self.idx2freq[i] and self.idx2freq[i] <= self.freq_threshold:
+                removed_word: str = self.idx2word[i]
+                self.word2idx.pop(removed_word)
+
+                # Swap the removed word with the last word in dictionary
+                last_word: str = self.idx2word.pop()
+                self.idx2word[i] = last_word
+                self.idx2freq[i] = self.idx2freq.pop()
+                self.word2idx[last_word] = i
+            else:
+                i += 1
 
 
 class corpus(dict):
@@ -58,8 +88,17 @@ class corpus(dict):
 
         self.json_dir: str = os.path.realpath('data/raw_json')
         self.text_dir: str = os.path.realpath('data/text')
-        self.train_set_file = 'train.txt'
+        self.data_file = 'data.txt'
+
         self.train_set: List[str] = []
+        self.train_proportion = 0.6
+
+        self.dev_set: List[str] = []
+        self.dev_proportion = 0.2
+
+        self.test_set: List[str] = []
+        self.test_proportion = 0.2
+
         self.dictionary = dictionary()
 
     def get_text_data(self, file_name: str, all_in_one: bool = False) -> None:
@@ -92,7 +131,7 @@ class corpus(dict):
         except FileNotFoundError:
             data: List[dict] = []
 
-        text_name: str = self.train_set_file if all_in_one else file_name + '.txt'
+        text_name: str = self.data_file if all_in_one else file_name + '.txt'
         text_path: str = os.path.join(self.text_dir, text_name)
         buffer_size = 1 << 20  # 1 MB
         tokenizer = get_tokenizer('spacy')
@@ -115,7 +154,7 @@ class corpus(dict):
 
         if all_in_one:
             # Clear the content
-            text_path: str = os.path.join(self.text_dir, self.train_set_file)
+            text_path: str = os.path.join(self.text_dir, self.data_file)
             open(text_path, 'w').close()
 
         for json_entry in os.scandir(self.json_dir):
@@ -123,11 +162,12 @@ class corpus(dict):
             if file_name.endswith('.json'):
                 self.get_text_data(file_name[:-len('.json')], all_in_one)
 
-    def add_sentence(self, words: List[str]) -> None:
+    def add_sentence(self, words: List[str], dataset: str = 'train') -> None:
         '''
         Add a new sentence to the corpus.
 
         :param words: a preprocessed word list of the new sentence
+        :param dataset: which dataset, can be `'train'`, `'dev'` or `'test'`
         '''
 
         if not words:
@@ -144,9 +184,14 @@ class corpus(dict):
         except IndexError:
             pass
         else:
-            self.train_set += words
             for word in words:
                 self.dictionary.add_word(word)
+            if dataset == 'dev':
+                self.dev_set += words
+            elif dataset == 'test':
+                self.test_set += words
+            else:
+                self.train_set += words
 
     def read_data(self, file_name: str = None) -> None:
         '''
@@ -155,8 +200,19 @@ class corpus(dict):
         :param file_name: file name of the dataset without extension
         '''
 
-        text_name: str = file_name + '.txt' if file_name else self.train_set_file
+        text_name: str = file_name + '.txt' if file_name else self.data_file
         text_path: str = os.path.join(self.text_dir, text_name)
+
         with open(text_path, 'r') as fi:
-            for line in fi:
-                self.add_sentence(line.split())
+            all_lines: List[str] = fi.read().splitlines()
+            train_size: int = floor(len(all_lines) * self.train_proportion)
+            dev_size: int = floor(len(all_lines) * self.dev_proportion)
+
+            for line in all_lines[:train_size]:
+                self.add_sentence(line.split(), 'train')
+            for line in all_lines[train_size:train_size+dev_size]:
+                self.add_sentence(line.split(), 'dev')
+            for line in all_lines[train_size+dev_size:]:
+                self.add_sentence(line.split(), 'test')
+
+            self.dictionary.clear_words()
