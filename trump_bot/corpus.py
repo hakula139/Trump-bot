@@ -70,6 +70,21 @@ class corpus(dict):
         :param all_in_one: write to a single file
         '''
 
+        def _filter_text(text: str) -> str:
+            '''
+            Filter a line of text and replace certain words.
+
+            Return the filtered text.
+
+            :param text: input text
+            '''
+
+            return (
+                text
+                .replace('&amp;', '&')
+                .replace('&amp,', '&')
+            )
+
         json_path: str = os.path.join(self.json_dir, file_name + '.json')
         try:
             with open(json_path, 'r', encoding='utf-8') as fi:
@@ -86,7 +101,7 @@ class corpus(dict):
             # Reverse the list to sort by time in ascending order
             for entry in reversed(data):
                 t: tweet = decode_tweet(entry)
-                text: str = unidecode(t.text)
+                text: str = _filter_text(unidecode(t.text))
                 words: List[str] = tokenizer(text)
                 buffer += ' '.join(words) + '\n'
             fo.write(buffer)

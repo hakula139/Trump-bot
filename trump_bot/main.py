@@ -15,8 +15,8 @@ def init_corpus() -> None:
 
     global cp
     cp = corpus()
-    # cp.get_all_text_data(all_in_one=True)
-    cp.read_data('2021')
+    cp.get_all_text_data(all_in_one=True)
+    cp.read_data()
 
 
 def init_model() -> None:
@@ -201,20 +201,17 @@ def main() -> None:
     plot(all_losses)
     print(duration_since(start_time) + ': Plotting done.')
 
-    evaluate_model()
-    print(duration_since(start_time) + ': Evaluating model done.')
-
 
 if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
     num_layers = 2
-    dropout = 0.2
+    dropout = 0.5
     learning_rate = 0.001
     num_epochs = 2000
     chunk_size = 20
     predict_len = 50
-    temperature = 0.7
+    temperature = 0.8
     clip = 0.25
     random_seed = 1234
     print_every = 100
