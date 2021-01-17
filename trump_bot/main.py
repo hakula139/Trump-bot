@@ -55,15 +55,27 @@ def words_to_tensor(words: List[str]) -> Tensor:
     return tensor
 
 
-def get_random_word() -> str:
+def get_random_word(dataset: str = 'dev') -> str:
     '''
-    Return a random word from the dictionary.
+    Return a random word from the dataset.
+
+    :param dataset: which dataset, can be `'train'`, `'dev'` or `'test'`
     '''
 
-    i: int = torch.randint(
-        cp.dictionary.start_pos, cp.dictionary.len(), (1,),
-    )[0]
-    return cp.dictionary.idx2word[i]
+    if dataset == 'dev':
+        src = cp.dev_set
+    elif dataset == 'test':
+        src = cp.test_set
+    else:
+        src = cp.train_set
+
+    while True:
+        i: int = torch.randint(0, len(src), (1,))[0]
+        word: str = src[i]
+        if word != cp.dictionary.eos:
+            break
+
+    return word
 
 
 def get_random_pair(dataset: str = 'train') -> Tuple[Tensor, Tensor]:
@@ -137,8 +149,8 @@ def train_model() -> List[float]:
         if loss < min_loss:
             save_model(loss)
             min_loss = loss
-        elif loss < 4.0:
-            current_lr /= 2.0
+        elif loss < 3.0:
+            current_lr *= 0.8
             for g in optimizer.param_groups:
                 g['lr'] = current_lr
 
@@ -214,9 +226,9 @@ def evaluate_model(save: bool = False) -> None:
     '''
 
     m.eval()
-    prime_word: str = get_random_word()
+    prime_word: str = get_random_word('dev')
     predicted_words: List[str] = evaluate(
-        [cp.dictionary.sos, prime_word], predict_len, temperature,
+        [prime_word], predict_len, temperature,
     )
     output: List[str] = ' '.join(predicted_words)
     if save:
@@ -286,15 +298,15 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 4000
-    num_layers = 3
-    dropout = 0.2
-    learning_rate = 0.0005
-    num_epochs = 4000
+    hidden_size = 500
+    num_layers = 2
+    dropout = 0.5
+    learning_rate = 0.001
+    num_epochs = 2000
     batch_size = 30
     chunk_size = 40
     predict_len = 100
-    temperature = 0.8
+    temperature = 0.7
     clip = 0.25
     random_seed = 1234
     print_every = 100
