@@ -1,4 +1,4 @@
-name: pytorch_gpu
+name: trump_bot
 
 channels:
   - conda-forge
