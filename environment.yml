@@ -1,0 +1,15 @@
+name: pytorch_gpu
+
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+
+dependencies:
+  - python=3.8
+  - cudatoolkit=10.1
+  - pytorch>=1.7
+  - spacy
+  - torchtext>=0.8
+  - unidecode
+  - pip
