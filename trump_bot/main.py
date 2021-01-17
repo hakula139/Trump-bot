@@ -126,7 +126,7 @@ def train_model() -> List[float]:
     m.train()
     all_losses: List[float] = []
     total_loss: float = 0.0
-    min_loss: float = 3.0
+    min_loss: float = 5.0
 
     for epoch in range(1, num_epochs + 1):
         loss: float = train(*get_random_pair('train'))
@@ -136,6 +136,9 @@ def train_model() -> List[float]:
             save_model()
             print(duration_since(start_time) + f': Model saved, {loss:.3f}')
             min_loss = loss
+        else:
+            for g in optimizer.param_groups:
+                g['lr'] /= 4.0
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
@@ -278,13 +281,13 @@ def main() -> None:
 if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
-    num_layers = 3
-    dropout = 0.2
+    num_layers = 2
+    dropout = 0.5
     learning_rate = 0.001
     num_epochs = 4000
     batch_size = 30
-    chunk_size = 30
-    predict_len = 140
+    chunk_size = 50
+    predict_len = 100
     temperature = 0.7
     clip = 0.25
     random_seed = 1234
