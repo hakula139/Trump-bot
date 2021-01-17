@@ -291,15 +291,15 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 1000
+    hidden_size = 500
     num_layers = 3
     dropout = 0.2
-    learning_rate = 0.001
+    learning_rate = 0.0005
     num_epochs = 10000
     batch_size = 30
     chunk_size = 40
     predict_len = 100
-    temperature = 0.7
+    temperature = 0.8
     clip = 1
     random_seed = 1234
     print_every = 100
