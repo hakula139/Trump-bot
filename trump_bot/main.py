@@ -143,8 +143,9 @@ def train_model() -> List[float]:
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
-            print('{}: ({} {:.1f}%) {:.3f}'.format(
-                duration_since(start_time), epoch, progress, loss,
+            print('{}: ({} {:.1f}%) {:.3f} {:.5f}'.format(
+                duration_since(start_time),
+                epoch, progress, loss, learning_rate,
             ))
             evaluate_model()
             m.train()
