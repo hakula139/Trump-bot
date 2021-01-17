@@ -280,13 +280,13 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 1000
-    num_layers = 2
+    hidden_size = 10000
+    num_layers = 3
     dropout = 0.5
     learning_rate = 0.001
     num_epochs = 4000
     batch_size = 30
-    chunk_size = 50
+    chunk_size = 500
     predict_len = 100
     temperature = 0.7
     clip = 0.25
