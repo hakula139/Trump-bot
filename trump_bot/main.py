@@ -18,7 +18,8 @@ def init_corpus() -> None:
     global cp
     cp = corpus()
     # cp.get_all_text_data(all_in_one=False)
-    cp.read_data()
+    for year in range(2020, 2022):
+        cp.read_data(str(year))
     print(f'Dictionary size: {cp.dictionary.len()}')
 
 
@@ -126,7 +127,7 @@ def train_model() -> List[float]:
     m.train()
     all_losses: List[float] = []
     total_loss: float = 0.0
-    min_loss: float = 5.0
+    min_loss: float = 4.0
 
     for epoch in range(1, num_epochs + 1):
         loss: float = train(*get_random_pair('train'))
@@ -136,9 +137,9 @@ def train_model() -> List[float]:
             save_model()
             print(duration_since(start_time) + f': Model saved, {loss:.3f}')
             min_loss = loss
-        else:
+        elif loss < 2.0:
             for g in optimizer.param_groups:
-                g['lr'] /= 4.0
+                g['lr'] /= 2.0
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
@@ -280,13 +281,13 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 10000
-    num_layers = 3
-    dropout = 0.5
-    learning_rate = 0.001
+    hidden_size = 3000
+    num_layers = 2
+    dropout = 0.2
+    learning_rate = 0.0005
     num_epochs = 4000
     batch_size = 30
-    chunk_size = 500
+    chunk_size = 40
     predict_len = 100
     temperature = 0.7
     clip = 0.25
