@@ -128,24 +128,25 @@ def train_model() -> List[float]:
     all_losses: List[float] = []
     total_loss: float = 0.0
     min_loss: float = 4.0
+    current_lr: float = learning_rate
 
     for epoch in range(1, num_epochs + 1):
         loss: float = train(*get_random_pair('train'))
         total_loss += loss
 
         if loss < min_loss:
-            save_model()
-            print(duration_since(start_time) + f': Model saved, {loss:.3f}')
+            save_model(loss)
             min_loss = loss
-        elif loss < 2.0:
+        elif loss < 4.0:
+            current_lr /= 2.0
             for g in optimizer.param_groups:
-                g['lr'] /= 2.0
+                g['lr'] = current_lr
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
             print('{}: ({} {:.1f}%) {:.3f} {:.5f}'.format(
                 duration_since(start_time),
-                epoch, progress, loss, learning_rate,
+                epoch, progress, loss, current_lr,
             ))
             evaluate_model()
             m.train()
@@ -238,13 +239,16 @@ def generate() -> None:
         evaluate_model(save=True)
 
 
-def save_model() -> None:
+def save_model(loss: float) -> None:
     '''
     Save the current model.
+
+    :param loss: current loss
     '''
 
     with open(model_path, 'wb') as f:
         torch.save(m.state_dict(), f)
+    print(duration_since(start_time) + f': Model saved, {loss:.3f}')
 
 
 def load_model() -> None:
@@ -282,15 +286,15 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 3000
-    num_layers = 2
+    hidden_size = 4000
+    num_layers = 3
     dropout = 0.2
     learning_rate = 0.0005
     num_epochs = 4000
     batch_size = 30
     chunk_size = 40
     predict_len = 100
-    temperature = 0.7
+    temperature = 0.8
     clip = 0.25
     random_seed = 1234
     print_every = 100
