@@ -1,4 +1,4 @@
-from corpus import corpus
+from corpus import corpus, dictionary
 from datetime import datetime
 from model import rnn
 import os
@@ -140,7 +140,6 @@ def train_model() -> List[float]:
     all_losses: List[float] = []
     total_loss: float = 0.0
     min_loss: float = 4.0
-    current_lr: float = learning_rate
 
     for epoch in range(1, num_epochs + 1):
         loss: float = train(*get_random_pair('train'))
@@ -149,16 +148,11 @@ def train_model() -> List[float]:
         if loss < min_loss:
             save_model(loss)
             min_loss = loss
-        elif loss < 3.0:
-            current_lr *= 0.8
-            for g in optimizer.param_groups:
-                g['lr'] = current_lr
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
-            print('{}: ({} {:.1f}%) {:.3f} {:.5f}'.format(
-                duration_since(start_time),
-                epoch, progress, loss, current_lr,
+            print('{}: ({} {:.1f}%) {:.3f}'.format(
+                duration_since(start_time), epoch, progress, loss,
             ))
             evaluate_model()
             m.train()
@@ -228,7 +222,7 @@ def evaluate_model(save: bool = False) -> None:
     m.eval()
     prime_word: str = get_random_word('dev')
     predicted_words: List[str] = evaluate(
-        [prime_word], predict_len, temperature,
+        [cp.dictionary.sos, prime_word], predict_len, temperature,
     )
     output: List[str] = ' '.join(predicted_words)
     if save:
@@ -298,11 +292,11 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 500
-    num_layers = 2
-    dropout = 0.5
+    hidden_size = 1000
+    num_layers = 3
+    dropout = 0
     learning_rate = 0.001
-    num_epochs = 2000
+    num_epochs = 4000
     batch_size = 30
     chunk_size = 40
     predict_len = 100
