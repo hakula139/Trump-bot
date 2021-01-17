@@ -20,7 +20,7 @@ class dictionary():
         self.idx2word: List[str] = []
         self.idx2freq: List[int] = []
         self.word2idx: Dict[str, int] = {}
-        self.freq_threshold = 1
+        self.freq_threshold = 2
         self.start_pos = 3
 
         self.unk = '<unk>'  # unknown word

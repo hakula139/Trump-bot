@@ -1,4 +1,5 @@
 from corpus import corpus
+from datetime import datetime
 from model import rnn
 import os
 from time import time
@@ -17,10 +18,7 @@ def init_corpus() -> None:
     global cp
     cp = corpus()
     # cp.get_all_text_data(all_in_one=False)
-    # cp.read_data('2018')
-    # cp.read_data('2019')
-    cp.read_data('2020')
-    cp.read_data('2021')
+    cp.read_data()
     print(f'Dictionary size: {cp.dictionary.len()}')
 
 
@@ -128,7 +126,7 @@ def train_model() -> List[float]:
     m.train()
     all_losses: List[float] = []
     total_loss: float = 0.0
-    min_loss: float = 2.0
+    min_loss: float = 3.0
 
     for epoch in range(1, num_epochs + 1):
         loss: float = train(*get_random_pair('train'))
@@ -202,9 +200,11 @@ def evaluate(prime_words: List[str] = None, predict_len: int = 30,
     return predicted_words
 
 
-def evaluate_model() -> None:
+def evaluate_model(save: bool = False) -> None:
     '''
     The main evaluating function.
+
+    :param save: save the output to local file
     '''
 
     m.eval()
@@ -212,7 +212,25 @@ def evaluate_model() -> None:
     predicted_words: List[str] = evaluate(
         [cp.dictionary.sos, prime_word], predict_len, temperature,
     )
-    print(' '.join(predicted_words))
+    output: List[str] = ' '.join(predicted_words)
+    if save:
+        current_time: str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with open(output_path, 'a') as f:
+            f.write(f'{current_time}:\n{output}\n\n')
+    else:
+        print(output)
+
+
+def generate() -> None:
+    '''
+    Generate new sentences using the best model, and save to local file.
+    '''
+
+    load_model()
+    for i in range(1, batch_size + 1):
+        progress: float = i / batch_size * 100
+        print(f'({i} {progress:.1f}%)', end='\r', flush=True)
+        evaluate_model(save=True)
 
 
 def save_model() -> None:
@@ -220,7 +238,7 @@ def save_model() -> None:
     Save the current model.
     '''
 
-    with open(save_path, 'wb') as f:
+    with open(model_path, 'wb') as f:
         torch.save(m.state_dict(), f)
 
 
@@ -230,7 +248,7 @@ def load_model() -> None:
     '''
 
     try:
-        with open(save_path, 'rb') as f:
+        with open(model_path, 'rb') as f:
             m.load_state_dict(torch.load(f))
     except FileNotFoundError:
         pass
@@ -253,12 +271,8 @@ def main() -> None:
     plot(all_losses)
     print(duration_since(start_time) + ': Plotting done.')
 
-    load_model()
-    for i in range(1, batch_size + 1):
-        progress: float = i / batch_size * 100
-        print(f'({i} {progress:.1f}%)')
-        evaluate_model()
-    print(duration_since(start_time) + ': Evaluating model done.')
+    generate()
+    print(duration_since(start_time) + ': New sentences generated.')
 
 
 if __name__ == '__main__':
@@ -276,7 +290,9 @@ if __name__ == '__main__':
     random_seed = 1234
     print_every = 100
     plot_every = 10
-    save_path = os.path.realpath('model/model.pt')
+
+    model_path = os.path.realpath('model/model.pt')
+    output_path = os.path.realpath('output/output.txt')
 
     # Set the random seed manually for reproducibility.
     torch.manual_seed(random_seed)
@@ -284,7 +300,6 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     start_time = time()
-
     try:
         main()
     except KeyboardInterrupt:
