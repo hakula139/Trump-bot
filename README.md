@@ -55,9 +55,9 @@ Generated texts are located in `./output/output.txt`.
 
 ## Learning curve
 
-The validation loss using default parameters.
+The training loss using default parameters:
 
-![Validation loss](./assets/loss.png)
+![Training loss](./assets/loss.png)
 
 ## TODO
 
