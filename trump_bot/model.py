@@ -33,8 +33,9 @@ class rnn(nn.Module):
         self.num_layers = num_layers
 
         self.drop = nn.Dropout(dropout)
-        self.encoder = nn.Embedding(output_size, input_size)
-        self.gru = nn.GRU(input_size, hidden_size, num_layers, dropout=dropout)
+        self.encoder = nn.Embedding(input_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size,
+                          num_layers, dropout=dropout)
         self.decoder = nn.Linear(hidden_size, output_size)
 
     def forward(self, inp: Tensor, hid: Tensor) -> Tuple[Tensor, Tensor]:
@@ -47,10 +48,11 @@ class rnn(nn.Module):
         :param hid: hidden tensor
         '''
 
-        emb: Tensor = self.drop(self.encoder(inp.view(1, -1)))
+        emb = self.encoder(inp.view(1, -1))
+        emb = self.drop(emb)
         out, hid = self.gru(emb, hid)
-        out: Tensor = self.drop(out)
-        dec: Tensor = self.decoder(out.view(1, -1))
+        out = self.drop(out)
+        dec = self.decoder(out).view(1, -1)
         return dec, hid
 
     def init_hidden(self, batch_size: int = 1) -> Tensor:

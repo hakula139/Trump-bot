@@ -55,10 +55,11 @@ def words_to_tensor(words: List[str]) -> Tensor:
     return tensor
 
 
-def get_random_word(dataset: str = 'dev') -> str:
+def get_random_words(count: int = 1, dataset: str = 'dev') -> List[str]:
     '''
-    Return a random word from the dataset.
+    Return a sequence of random words from the dataset.
 
+    :param count: how many words are required
     :param dataset: which dataset, can be `'train'`, `'dev'` or `'test'`
     '''
 
@@ -69,13 +70,11 @@ def get_random_word(dataset: str = 'dev') -> str:
     else:
         src = cp.train_set
 
-    while True:
-        i: int = torch.randint(0, len(src), (1,))[0]
-        word: str = src[i]
-        if word != cp.dictionary.eos:
-            break
+    max_i: int = len(src) - count
+    i: int = torch.randint(0, max_i, (1,))[0]
+    words: List[str] = src[i:i+count]
 
-    return word
+    return words
 
 
 def get_random_pair(dataset: str = 'train') -> Tuple[Tensor, Tensor]:
@@ -220,9 +219,9 @@ def evaluate_model(save: bool = False) -> None:
     '''
 
     m.eval()
-    prime_word: str = get_random_word('dev')
+    prime_words: List[str] = get_random_words(2, 'dev')
     predicted_words: List[str] = evaluate(
-        [cp.dictionary.sos, prime_word], predict_len, temperature,
+        prime_words, predict_len, temperature,
     )
     output: List[str] = ' '.join(predicted_words)
     if save:
@@ -294,17 +293,17 @@ if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
     num_layers = 3
-    dropout = 0
+    dropout = 0.2
     learning_rate = 0.001
-    num_epochs = 4000
+    num_epochs = 10000
     batch_size = 30
     chunk_size = 40
     predict_len = 100
     temperature = 0.7
-    clip = 0.25
+    clip = 1
     random_seed = 1234
     print_every = 100
-    plot_every = 10
+    plot_every = 20
 
     model_path = os.path.realpath('model/model.pt')
     output_path = os.path.realpath('output/output.txt')
