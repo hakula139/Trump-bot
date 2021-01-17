@@ -1,14 +1,15 @@
 name: trump_bot
 
 channels:
-  - conda-forge
   - pytorch
+  - conda-forge
   - defaults
 
 dependencies:
   - python=3.8
   - cudatoolkit=10.1
   - pytorch>=1.7
+  - matplotlib
   - spacy
   - torchtext>=0.8
   - unidecode
