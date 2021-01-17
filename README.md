@@ -10,6 +10,7 @@ A simple Twitter bot which tries to mimic @realDonaldTrump.
     - [0. Prerequisites](#0-prerequisites)
     - [1. Installation](#1-installation)
     - [2. Usage](#2-usage)
+  - [Learning curve](#learning-curve)
   - [TODO](#todo)
   - [Contributors](#contributors)
   - [License](#license)
@@ -37,6 +38,7 @@ Then set up a virtual environment and install the dependencies using `conda`.
 ```bash
 conda env update --name trump_bot --file environment.yml
 conda activate trump_bot
+python -m spacy download en_core_web_sm
 ```
 
 ### 2. Usage
@@ -50,6 +52,12 @@ python ./trump_bot/main.py
 Currently passing parameters is not supported. You can manually modify the parameters in `./trump_bot/main.py`.
 
 Generated texts are located in `./output/output.txt`.
+
+## Learning curve
+
+The validation loss using default parameters.
+
+![Validation loss](./assets/loss.png)
 
 ## TODO
 
