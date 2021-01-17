@@ -20,7 +20,7 @@ A simple Twitter bot which tries to mimic @realDonaldTrump.
 
 To set up the environment, you need to have the following dependencies installed.
 
-- [Conda](https://docs.anaconda.com/anaconda/install) 4.9 or later (with Python 3.8)
+- [Anaconda](https://www.anaconda.com/products/individual) 4.9 or later (with Python 3.8)
 - [CUDA](https://developer.nvidia.com/cuda-10.1-download-archive-base) 10.1
 
 ### 1. Installation
