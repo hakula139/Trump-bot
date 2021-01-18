@@ -17,7 +17,7 @@ def init_corpus() -> None:
 
     global cp
     cp = corpus()
-    # cp.get_all_text_data(all_in_one=False)
+    cp.get_all_text_data(all_in_one=False)
     for year in range(2019, 2022):
         cp.read_data(str(year))
     print(f'Dictionary size: {cp.dictionary.len()}')
