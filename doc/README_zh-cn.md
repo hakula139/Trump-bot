@@ -16,7 +16,7 @@
   - [实验环境](#实验环境)
   - [结论和感想](#结论和感想)
   - [贡献者](#贡献者)
-  - [协议](#协议)
+  - [许可协议](#许可协议)
 
 ## 选题动机
 
@@ -710,6 +710,6 @@ I have n't think the Federal Party are doing such being important in their stone
 
 - [**Hakula Chen**](https://github.com/hakula139)<[i@hakula.xyz](mailto:i@hakula.xyz)> - 复旦大学
 
-## 协议
+## 许可协议
 
-本项目遵循 GNU General Public License v3.0 协议，详情参见 [LICENSE](../LICENSE) 文件。
+本项目遵循 GNU General Public License v3.0 许可协议，详情参见 [LICENSE](../LICENSE) 文件。
