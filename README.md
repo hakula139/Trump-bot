@@ -2,7 +2,7 @@
 
 A simple Twitter bot which tries to mimic @realDonaldTrump.
 
-[中文文档](./README_zh-cn.md)
+[中文文档](./doc/README_zh-cn.md)
 
 ## Table of Contents
 
