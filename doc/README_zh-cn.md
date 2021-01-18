@@ -35,14 +35,14 @@
 
 在[这里](https://www.thetrumparchive.com)，我们可以根据年份和关键词检索、浏览及下载特朗普发过的所有推特。可以看到总共有将近 60000 条推特数据，还是相当可观的。
 
-使用该网站提供的导出功能，我们可以得到 JSON 格式的推特数据，保存在了 `../data/raw_json/` 文件夹下。这里我们仅下载了 2018 ~ 2021 年的推特数据，并预先过滤了以下数据：
+使用该网站提供的导出功能，我们可以得到 JSON 格式的推特数据，保存在了 `data/raw_json/` 文件夹下。这里我们仅下载了 2018 ~ 2021 年的推特数据，并预先过滤了以下数据：
 
 1. 以 `http://` 或 `https://` 开头的推特，这些通常是链接分享，并不包含文本信息
 2. 以 `RT` 开头的推特，这些通常是转发（retweet）的推特，不是特朗普本人的发言
 
 接下来，我们需要将这些 JSON 格式的数据进一步处理，从而得到一个可以进行训练的语料库。在 [corpus.py](../trump_bot/corpus.py) 中，我们定义了两个类 `dictionary` 和 `corpus`。其中，`dictionary` 用于维护一个词典，保存了数据集中出现过的所有单词，以及相应的索引和出现频率；`corpus` 用于维护一个语料库，以 `List[str]` 类型按顺序保存了完整的数据集，并提供了将 JSON 格式数据转化为 text 格式数据的处理方法，以及 text 格式数据的读取方法。
 
-具体来说，首先 `corpus` 利用函数 `get_text_data`，读取 JSON 格式的数据，遍历并提取所有推特对象的 `text` 字段（也就是推特的文本内容）。然后我们利用 [spaCy](https://spacy.io) 库，将每条文本进行分词处理，包括将各种标点符号与单词分开，以及将 `n't`, `'s` 等常用缩写从单词上分离。最后将处理后的数据以 text 格式保存在 `../data/text/` 文件夹下。
+具体来说，首先 `corpus` 利用函数 `get_text_data`，读取 JSON 格式的数据，遍历并提取所有推特对象的 `text` 字段（也就是推特的文本内容）。然后我们利用 [spaCy](https://spacy.io) 库，将每条文本进行分词处理，包括将各种标点符号与单词分开，以及将 `n't`, `'s` 等常用缩写从单词上分离。最后将处理后的数据以 text 格式保存在 `data/text/` 文件夹下。
 
 得到 text 格式数据以后，`corpus` 利用函数 `read_data` 将数据载入内存。一方面，将每行文本分成一组单词，并添加句首标记 `<sos>`（start of sentence）和句尾标记 `<eos>`（end of sentence），利用函数 `add_sentence` 以 `List[str]` 类型保存在数据集中；另一方面，在添加句子的同时，将句子中出现的单词不重复地保存到词典 `dictionary` 中，并记录此时的索引，用于之后将句子转化为张量（tensor）。
 
@@ -629,12 +629,12 @@ python -m spacy download en_core_web_sm
 最后执行主程序，就可以开始训练了。
 
 ```bash {.line-numbers}
-python ../trump_bot/main.py
+python ./trump_bot/main.py
 ```
 
 目前暂时不支持传递参数，因此需要手动在 [main.py](../trump_bot/main.py) 里调整。
 
-使用测试集生成的文本位于 `../output/output.txt`，模型学习率的曲线图位于 `../assets/loss.png`。
+使用测试集生成的文本位于 `output/output.txt`，模型学习率的曲线图位于 `assets/loss.png`。
 
 ## 实验结果
 
