@@ -2,6 +2,8 @@
 
 A simple Twitter bot which tries to mimic @realDonaldTrump.
 
+[中文文档](./README_zh-cn.md)
+
 ## Table of Contents
 
 - [Trump-bot](#trump-bot)
@@ -51,18 +53,18 @@ python ./trump_bot/main.py
 
 Currently passing parameters is not supported. You can manually modify the parameters in `./trump_bot/main.py`.
 
-Generated texts are located in `./output/output.txt`.
+Generated texts are located in `./output/output.txt`, the figure of network learning rate is saved to `./assets/loss.png`.
 
 ## Learning curve
 
-The training loss using default parameters:
+The training loss and validation loss using default parameters:
 
-![Training loss](./assets/loss.png)
+![Learning curve](./assets/loss.png)
 
 ## TODO
 
 - [ ] Support passing parameters
-- [ ] Compose a detailed document
+- [x] Compose a detailed document
 
 ## Contributors
 
