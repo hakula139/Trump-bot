@@ -219,4 +219,4 @@ class corpus(dict):
             for line in all_lines[train_size+dev_size:]:
                 self.add_sentence(line.split(), 'test')
 
-            self.dictionary.clear_words()
+            # self.dictionary.clear_words()
