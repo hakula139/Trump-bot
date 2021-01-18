@@ -6,7 +6,7 @@ with open('README.md', 'r', encoding='utf-8') as doc:
 
 setuptools.setup(
     name='trump_bot',
-    version='0.1.0',
+    version='0.1.1',
     author='Hakula Chen',
     author_email='i@hakula.xyz',
     description='A simple Twitter bot which tries to mimic @realDonaldTrump.',
