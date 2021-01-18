@@ -18,7 +18,7 @@ def init_corpus() -> None:
     global cp
     cp = corpus()
     # cp.get_all_text_data(all_in_one=False)
-    for year in range(2020, 2022):
+    for year in range(2019, 2022):
         cp.read_data(str(year))
     print(f'Dictionary size: {cp.dictionary.len()}')
 
@@ -113,6 +113,7 @@ def train(inp: Tensor, tar: Tensor) -> float:
     :param tar: target tensor
     '''
 
+    m.train()
     m.zero_grad()
     hid: Tensor = m.init_hidden()
     loss: Tensor = 0
@@ -128,39 +129,69 @@ def train(inp: Tensor, tar: Tensor) -> float:
     return loss.item() / chunk_size
 
 
-def train_model() -> List[float]:
+def validate(inp: Tensor, tar: Tensor) -> float:
+    '''
+    Validate the model using a pair of input and target.
+
+    Return the loss.
+
+    :param inp: input tensor
+    :param tar: target tensor
+    '''
+
+    m.eval()
+    hid: Tensor = m.init_hidden()
+    loss: Tensor = 0
+
+    with torch.no_grad():
+        for i in range(inp.size(0)):
+            out, hid = m(inp[i], hid)
+            loss += criterion(out, tar[i].view(-1))
+
+    return loss.item() / chunk_size
+
+
+def train_model() -> Tuple[List[float], List[float]]:
     '''
     The main training function.
 
-    Return all losses.
+    Return all training losses and all validation losses.
     '''
 
-    m.train()
-    all_losses: List[float] = []
-    total_loss: float = 0.0
-    min_loss: float = 4.0
+    all_train_losses: List[float] = []
+    all_valid_losses: List[float] = []
+    total_train_loss: float = 0.0
+    total_valid_loss: float = 0.0
+    min_valid_loss: float = 4.0
 
     for epoch in range(1, num_epochs + 1):
-        loss: float = train(*get_random_pair('train'))
-        total_loss += loss
+        train_loss: float = train(*get_random_pair('train'))
+        valid_loss: float = validate(*get_random_pair('dev'))
+        total_train_loss += train_loss
+        total_valid_loss += valid_loss
 
-        if loss < min_loss:
-            save_model(loss)
-            min_loss = loss
+        if valid_loss < min_valid_loss:
+            save_model(valid_loss)
+            min_valid_loss = valid_loss
 
         if epoch % print_every == 0:
             progress: float = epoch / num_epochs * 100
-            print('{}: ({} {:.1f}%) {:.3f}'.format(
-                duration_since(start_time), epoch, progress, loss,
-            ))
+            print(
+                '{}: ({} {:.1f}%) train_loss: {:.3f}, valid_loss: {:.3f}'
+                .format(
+                    duration_since(start_time), epoch, progress,
+                    train_loss, valid_loss,
+                )
+            )
             evaluate_model()
-            m.train()
 
         if epoch % plot_every == 0:
-            all_losses.append(total_loss / plot_every)
-            total_loss = 0.0
+            all_train_losses.append(total_train_loss / plot_every)
+            all_valid_losses.append(total_valid_loss / plot_every)
+            total_train_loss = 0.0
+            total_valid_loss = 0.0
 
-    return all_losses
+    return all_train_losses, all_valid_losses
 
 
 def evaluate(prime_words: List[str] = None, predict_len: int = 30,
@@ -279,10 +310,10 @@ def main() -> None:
     init_model()
     print(duration_since(start_time) + ': Training model initialized.')
 
-    all_losses = train_model()
+    all_train_losses, all_valid_losses = train_model()
     print(duration_since(start_time) + ': Training model done.')
 
-    plot(all_losses)
+    plot(num_epochs, plot_every, all_train_losses, all_valid_losses)
     print(duration_since(start_time) + ': Plotting done.')
 
     generate()
@@ -295,7 +326,7 @@ if __name__ == '__main__':
     num_layers = 3
     dropout = 0.2
     learning_rate = 0.0005
-    num_epochs = 10000
+    num_epochs = 1000
     batch_size = 30
     chunk_size = 40
     predict_len = 100

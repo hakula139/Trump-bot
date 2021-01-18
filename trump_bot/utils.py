@@ -30,13 +30,25 @@ def duration_since(start_time: float) -> str:
     return pretty_duration
 
 
-def plot(all_losses: List[float]) -> None:
+def plot(
+    num_epochs: int, plot_every: int, all_train_losses: List[float], all_valid_losses: List[float]
+) -> None:
     '''
-    Plot the historical loss from `all_losses`, which shows the network learning rate.
+    Plot the historical training loss and validation loss, so as to show the
+    network learning rate.
 
-    :param all_losses: the historical loss
+    :param num_epochs: the number of epochs
+    :param plot_every: plotting interval
+    :param all_train_losses: the historical training loss
+    :param all_valid_losses: the historical validation loss
     '''
 
+    epochs = range(1, num_epochs + 1, plot_every)
     plt.figure()
-    plt.plot(all_losses)
+    plt.plot(epochs, all_train_losses, 'r', label='Training loss')
+    plt.plot(epochs, all_valid_losses, 'b', label='Validation loss')
+    plt.title('Learning rate')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
     plt.savefig(plot_location)

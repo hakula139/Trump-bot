@@ -95,13 +95,13 @@ class corpus(dict):
         self.data_file = 'data.txt'
 
         self.train_set: List[str] = []
-        self.train_proportion = 0.8
+        self.train_proportion = 0.4
 
         self.dev_set: List[str] = []
-        self.dev_proportion = 0.1
+        self.dev_proportion = 0.4
 
         self.test_set: List[str] = []
-        self.test_proportion = 0.1
+        self.test_proportion = 0.2
 
         self.dictionary = dictionary()
 
