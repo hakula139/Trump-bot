@@ -234,8 +234,8 @@ def evaluate(prime_words: List[str] = None, predict_len: int = 30,
             # Add predicted word to words and use as next input
             predicted_word: str = cp.dictionary.idx2word[top_i]
             predicted_words.append(predicted_word)
-            if (predicted_word == cp.dictionary.eos):
-                break
+            # if (predicted_word == cp.dictionary.eos):
+            #     break
 
             inp.fill_(top_i)
 
@@ -250,14 +250,14 @@ def evaluate_model(save: bool = False) -> None:
     '''
 
     m.eval()
-    prime_words: List[str] = get_random_words(2, 'dev')
+    prime_words: List[str] = get_random_words(prime_len, 'dev')
     predicted_words: List[str] = evaluate(
         prime_words, predict_len, temperature,
     )
     output: List[str] = ' '.join(predicted_words)
     if save:
         current_time: str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        with open(output_path, 'a') as f:
+        with open(output_path, 'w') as f:
             f.write(f'{current_time}:\n{output}\n\n')
     else:
         print(output)
@@ -322,19 +322,20 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 500
+    hidden_size = 1000
     num_layers = 3
     dropout = 0.2
     learning_rate = 0.0005
-    num_epochs = 1000
-    batch_size = 30
-    chunk_size = 40
+    num_epochs = 4000
+    batch_size = 50
+    chunk_size = 30
+    prime_len = 5
     predict_len = 100
     temperature = 0.8
-    clip = 1
+    clip = 0.25
     random_seed = 1234
     print_every = 100
-    plot_every = 20
+    plot_every = 40
 
     model_path = os.path.realpath('model/model.pt')
     output_path = os.path.realpath('output/output.txt')
