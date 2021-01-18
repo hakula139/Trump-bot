@@ -257,7 +257,7 @@ def evaluate_model(save: bool = False) -> None:
     output: List[str] = ' '.join(predicted_words)
     if save:
         current_time: str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        with open(output_path, 'w') as f:
+        with open(output_path, 'a') as f:
             f.write(f'{current_time}:\n{output}\n\n')
     else:
         print(output)
@@ -324,9 +324,9 @@ if __name__ == '__main__':
     # Parameters
     hidden_size = 1000
     num_layers = 3
-    dropout = 0.2
+    dropout = 0.4
     learning_rate = 0.0005
-    num_epochs = 4000
+    num_epochs = 10000
     batch_size = 50
     chunk_size = 30
     prime_len = 5
@@ -334,8 +334,8 @@ if __name__ == '__main__':
     temperature = 0.8
     clip = 0.25
     random_seed = 1234
-    print_every = 100
-    plot_every = 40
+    print_every = 200
+    plot_every = 200
 
     model_path = os.path.realpath('model/model.pt')
     output_path = os.path.realpath('output/output.txt')
