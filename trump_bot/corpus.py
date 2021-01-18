@@ -80,7 +80,7 @@ class dictionary():
                 i += 1
 
 
-class corpus(dict):
+class corpus():
     '''
     A corpus built with the training set.
     '''
