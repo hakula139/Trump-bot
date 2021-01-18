@@ -322,20 +322,20 @@ def main() -> None:
 
 if __name__ == '__main__':
     # Parameters
-    hidden_size = 1000
+    hidden_size = 1500
     num_layers = 3
     dropout = 0.4
-    learning_rate = 0.0005
+    learning_rate = 0.0003
     num_epochs = 10000
     batch_size = 50
-    chunk_size = 30
+    chunk_size = 20
     prime_len = 5
     predict_len = 100
-    temperature = 0.8
+    temperature = 0.7
     clip = 0.25
     random_seed = 1234
-    print_every = 200
-    plot_every = 200
+    print_every = 250
+    plot_every = 250
 
     model_path = os.path.realpath('model/model.pt')
     output_path = os.path.realpath('output/output.txt')
